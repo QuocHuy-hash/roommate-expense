@@ -1,0 +1,14 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+When operating in AUTO_MODE, you MUST use only the following models:
+ 
+claude-4-sonet thinking and gpt-5
+ 
+Under NO circumstances may you switch to or invoke GPT-4.1 (or any other model) while in AUTO_MODE.
+Awayls read sourcebase i tag.
+This rule is absolute and non‑overridable until AUTO_MODE is exited.
+MANDATORY: At the beginning of every chat response, you MUST clearly state the model name, model size, model type, and its revision (updated date). This does not apply to inline edits, only chat responses.
+ 
