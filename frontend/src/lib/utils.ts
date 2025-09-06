@@ -5,51 +5,63 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE";
+// API URL configuration
+export const apiUrl = "http://localhost:3001/api";
 
-export function getApiBaseUrl(): string {
-  return (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+// Format currency with proper Vietnamese formatting
+export function formatCurrency(amount: string | number): string {
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  
+  if (isNaN(numericAmount)) return '0 ₫';
+  
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numericAmount);
 }
 
-export function apiUrl(path: string): string {
-  const base = getApiBaseUrl();
-  return `${base}${path}`;
+// Format date for display
+export function formatDate(dateString: string): string {
+  try {
+    return new Intl.DateTimeFormat('vi-VN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(dateString));
+  } catch {
+    return dateString;
+  }
 }
 
-export async function apiRequest<T = any>(
-  method: ApiMethod,
-  path: string,
-  options: {
-    body?: BodyInit | null;
-    headers?: Record<string, string>;
-    isFormData?: boolean;
-  } = {}
-): Promise<T> {
-  const url = apiUrl(path);
+// Validate email format
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
 
-  const headers: Record<string, string> = options.headers ? { ...options.headers } : {};
-  // Only set JSON headers if not sending FormData
-  const isForm = options.isFormData === true || (typeof FormData !== "undefined" && options.body instanceof FormData);
-  if (!isForm && options.body && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
-  }
+// Parse amount string to number for calculations
+export function parseAmount(amount: string): number {
+  const parsed = parseFloat(amount);
+  return isNaN(parsed) ? 0 : parsed;
+}
 
-  const response = await fetch(url, {
-    method,
-    credentials: "include",
-    headers,
-    body: options.body,
-  });
+// Convert number to amount string
+export function toAmountString(amount: number): string {
+  return amount.toFixed(2);
+}
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`${response.status}: ${text || response.statusText}`);
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    return (await response.json()) as T;
-  }
-  // @ts-expect-error allow text response generic
-  return (await response.text()) as T;
+// Debounce function for search inputs
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
 }

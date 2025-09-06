@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/app-header";
-import Dashboard from "@/components/dashboard";
-import TransactionList from "@/components/transaction-list";
-import Reports from "@/components/reports";
+import Dashboard from "@/components/dashboard-new";
+import TransactionList from "@/components/transaction-list-new";
+import Reports from "@/components/reports-new";
 import Profile from "@/components/profile";
 import MobileNav from "@/components/mobile-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,23 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 type Tab = 'dashboard' | 'transactions' | 'reports' | 'profile';
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

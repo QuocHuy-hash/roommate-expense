@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { expensesAPI, settlementsAPI, handleAPIError, type User } from "@/lib/api";
 import { formatCurrency, parseAmount } from "@/lib/utils";
 import ExpenseForm from "./expense-form";
 import SettlementForm from "./settlement-form";
@@ -13,7 +10,7 @@ import TransactionList from "./transaction-list";
 import { Plus, Handshake, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 
 // Mock users - In a real app, you'd fetch this from an API
-const mockUsers: User[] = [
+const mockUsers = [
   {
     id: "user-2",
     email: "user2@example.com",
@@ -24,41 +21,61 @@ const mockUsers: User[] = [
 ];
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  // Mock user data
+  const mockUser = {
+    id: "user-1",
+    email: "user1@example.com", 
+    firstName: "User",
+    lastName: "One"
+  };
+  
+  const user = mockUser; // Use mock user instead of useAuth
   const { toast } = useToast();
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
 
-  // Fetch expenses
-  const { data: expensesData, isLoading: expensesLoading, error: expensesError } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: expensesAPI.getAll,
-    retry: 2,
-  });
+  // Mock data for UI display
+  const mockExpensesData = {
+    expenses: [
+      {
+        id: "1",
+        description: "Tiền điện tháng 12",
+        amount: "500000",
+        payerId: "user-1",
+        isShared: true,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: "2", 
+        description: "Tiền nước",
+        amount: "200000",
+        payerId: "user-2",
+        isShared: true,
+        createdAt: new Date().toISOString(),
+      }
+    ]
+  };
 
-  // Fetch settlements
-  const { data: settlementsData, isLoading: settlementsLoading, error: settlementsError } = useQuery({
-    queryKey: ["settlements"],
-    queryFn: settlementsAPI.getAll,
-    retry: 2,
-  });
+  const mockSettlementsData = {
+    settlements: [
+      {
+        id: "1",
+        amount: "150000",
+        payerId: "user-1",
+        payeeId: "user-2",
+        description: "Thanh toán tiền điện",
+        createdAt: new Date().toISOString(),
+      }
+    ]
+  };
 
-  // Handle errors
-  if (expensesError) {
-    toast({
-      title: "Lỗi",
-      description: handleAPIError(expensesError),
-      variant: "destructive",
-    });
-  }
-
-  if (settlementsError) {
-    toast({
-      title: "Lỗi",
-      description: handleAPIError(settlementsError),
-      variant: "destructive",
-    });
-  }
+  // Use mock data instead of API calls
+  const expensesData = mockExpensesData;
+  const settlementsData = mockSettlementsData;
+  const expensesLoading = false;
+  const settlementsLoading = false;
+  const expensesError = null;
+  const settlementsError = null;
 
   const expenses = expensesData?.expenses || [];
   const settlements = settlementsData?.settlements || [];

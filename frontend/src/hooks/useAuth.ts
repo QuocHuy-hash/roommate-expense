@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
-
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  profileImageUrl?: string;
-}
+import { authAPI, handleAPIError, type User } from "@/lib/api";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,16 +8,18 @@ export function useAuth() {
 
   // Check if user is logged in on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuth = () => {
       try {
         const token = localStorage.getItem('auth_token');
-        if (!token) {
+        const savedUser = localStorage.getItem('user');
+        
+        if (!token || !savedUser) {
           setIsLoading(false);
           return;
         }
 
-        const response = await api.get('/auth/me');
-        setUser(response.data.user);
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -42,9 +36,9 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await api.post('/auth/login', { email, password });
+      const response = await authAPI.login({ email, password });
       
-      const { user: userData, token } = response.data;
+      const { user: userData, token } = response;
       
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -54,7 +48,7 @@ export function useAuth() {
       
       return userData;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Đăng nhập thất bại');
+      throw new Error(handleAPIError(error));
     } finally {
       setIsLoading(false);
     }
@@ -63,14 +57,14 @@ export function useAuth() {
   const register = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
       setIsLoading(true);
-      const response = await api.post('/auth/register', {
+      const response = await authAPI.register({
         email,
         password,
         firstName,
         lastName
       });
       
-      const { user: userData, token } = response.data;
+      const { user: userData, token } = response;
       
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -80,7 +74,7 @@ export function useAuth() {
       
       return userData;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Đăng ký thất bại');
+      throw new Error(handleAPIError(error));
     } finally {
       setIsLoading(false);
     }
