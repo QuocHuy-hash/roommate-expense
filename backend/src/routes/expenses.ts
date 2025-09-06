@@ -9,6 +9,35 @@ const router = Router();
 // All expense routes require authentication
 router.use(authenticateToken);
 
+/**
+ * @swagger
+ * /api/expenses:
+ *   get:
+ *     summary: Get all expenses
+ *     description: Retrieve all expenses in the system
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of expenses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ExpensesListResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Get all expenses
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -34,6 +63,41 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/expenses:
+ *   post:
+ *     summary: Create new expense
+ *     description: Create a new expense record
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateExpenseRequest'
+ *     responses:
+ *       201:
+ *         description: Expense created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ExpenseResponse'
+ *       400:
+ *         description: Invalid expense data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Create new expense
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -63,6 +127,61 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/expenses/{id}:
+ *   put:
+ *     summary: Update expense
+ *     description: Update an existing expense (only by the payer)
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Expense ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateExpenseRequest'
+ *     responses:
+ *       200:
+ *         description: Expense updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ExpenseResponse'
+ *       400:
+ *         description: Invalid expense data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Not authorized to update this expense
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Expense not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Update expense
 router.put('/:id', async (req: Request, res: Response) => {
   try {
@@ -110,6 +229,59 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/expenses/{id}:
+ *   delete:
+ *     summary: Delete expense
+ *     description: Delete an expense (only by the payer)
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Expense ID
+ *     responses:
+ *       200:
+ *         description: Expense deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Expense deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Not authorized to delete this expense
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Expense not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Delete expense
 router.delete('/:id', async (req: Request, res: Response) => {
   try {

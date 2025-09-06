@@ -92,6 +92,7 @@ export const settlementsRelations = relations(settlements, ({ one }) => ({
 // Zod schemas for validation
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
+  payerId: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
@@ -100,6 +101,7 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({
 
 export const insertSettlementSchema = createInsertSchema(settlements).omit({
   id: true,
+  payerId: true,
   createdAt: true,
 }).extend({
   amount: z.string().min(1, "Amount is required").transform((val) => parseFloat(val)),

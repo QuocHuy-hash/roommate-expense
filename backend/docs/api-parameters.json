@@ -1,0 +1,422 @@
+{
+  "endpoints": {
+    "health": {
+      "method": "GET",
+      "path": "/health",
+      "description": "Health check endpoint",
+      "authentication": false,
+      "parameters": {},
+      "response": {
+        "200": {
+          "status": "string",
+          "timestamp": "string (ISO date)"
+        }
+      }
+    },
+    "auth": {
+      "register": {
+        "method": "POST",
+        "path": "/api/auth/register",
+        "description": "Register new user account",
+        "authentication": false,
+        "parameters": {
+          "body": {
+            "email": {
+              "type": "string",
+              "required": true,
+              "format": "email",
+              "example": "user@example.com"
+            },
+            "password": {
+              "type": "string",
+              "required": true,
+              "minLength": 6,
+              "example": "password123"
+            },
+            "firstName": {
+              "type": "string",
+              "required": true,
+              "example": "John"
+            },
+            "lastName": {
+              "type": "string",
+              "required": true,
+              "example": "Doe"
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "message": "string",
+            "user": {
+              "id": "string (UUID)",
+              "email": "string",
+              "firstName": "string",
+              "lastName": "string",
+              "profileImageUrl": "string | null"
+            },
+            "token": "string (JWT)"
+          },
+          "400": {
+            "error": "string"
+          }
+        }
+      },
+      "login": {
+        "method": "POST",
+        "path": "/api/auth/login",
+        "description": "User login",
+        "authentication": false,
+        "parameters": {
+          "body": {
+            "email": {
+              "type": "string",
+              "required": true,
+              "format": "email",
+              "example": "user@example.com"
+            },
+            "password": {
+              "type": "string",
+              "required": true,
+              "minLength": 6,
+              "example": "password123"
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "message": "string",
+            "user": {
+              "id": "string (UUID)",
+              "email": "string",
+              "firstName": "string",
+              "lastName": "string",
+              "profileImageUrl": "string | null"
+            },
+            "token": "string (JWT)"
+          },
+          "401": {
+            "error": "Invalid credentials"
+          },
+          "400": {
+            "error": "Invalid login data"
+          }
+        }
+      }
+    },
+    "expenses": {
+      "list": {
+        "method": "GET",
+        "path": "/api/expenses",
+        "description": "Get all expenses",
+        "authentication": true,
+        "parameters": {},
+        "response": {
+          "200": {
+            "expenses": [
+              {
+                "id": "string (UUID)",
+                "title": "string",
+                "amount": "string (decimal)",
+                "description": "string | null",
+                "payerId": "string (UUID)",
+                "isShared": "boolean",
+                "imageUrl": "string | null",
+                "createdAt": "string (ISO date)",
+                "updatedAt": "string (ISO date)"
+              }
+            ]
+          },
+          "401": {
+            "error": "User not authenticated"
+          },
+          "500": {
+            "error": "Failed to fetch expenses"
+          }
+        }
+      },
+      "create": {
+        "method": "POST",
+        "path": "/api/expenses",
+        "description": "Create new expense",
+        "authentication": true,
+        "parameters": {
+          "body": {
+            "title": {
+              "type": "string",
+              "required": true,
+              "example": "Grocery Shopping"
+            },
+            "amount": {
+              "type": "string",
+              "required": true,
+              "format": "decimal",
+              "example": "150.75"
+            },
+            "description": {
+              "type": "string",
+              "required": false,
+              "example": "Weekly grocery shopping"
+            },
+            "isShared": {
+              "type": "boolean",
+              "required": false,
+              "default": true,
+              "example": true
+            },
+            "imageUrl": {
+              "type": "string",
+              "required": false,
+              "example": "https://example.com/receipt.jpg"
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "message": "Expense created successfully",
+            "expense": {
+              "id": "string (UUID)",
+              "title": "string",
+              "amount": "string (decimal)",
+              "description": "string | null",
+              "payerId": "string (UUID)",
+              "isShared": "boolean",
+              "imageUrl": "string | null",
+              "createdAt": "string (ISO date)",
+              "updatedAt": "string (ISO date)"
+            }
+          },
+          "400": {
+            "error": "Invalid expense data"
+          },
+          "401": {
+            "error": "User not authenticated"
+          }
+        }
+      },
+      "update": {
+        "method": "PUT",
+        "path": "/api/expenses/:id",
+        "description": "Update existing expense",
+        "authentication": true,
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "UUID",
+              "required": true,
+              "description": "Expense ID"
+            }
+          },
+          "body": {
+            "title": {
+              "type": "string",
+              "required": true,
+              "example": "Updated Grocery Shopping"
+            },
+            "amount": {
+              "type": "string",
+              "required": true,
+              "format": "decimal",
+              "example": "175.25"
+            },
+            "description": {
+              "type": "string",
+              "required": false,
+              "example": "Updated description"
+            },
+            "isShared": {
+              "type": "boolean",
+              "required": false,
+              "example": true
+            },
+            "imageUrl": {
+              "type": "string",
+              "required": false,
+              "example": "https://example.com/new-receipt.jpg"
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "message": "Expense updated successfully",
+            "expense": {
+              "id": "string (UUID)",
+              "title": "string",
+              "amount": "string (decimal)",
+              "description": "string | null",
+              "payerId": "string (UUID)",
+              "isShared": "boolean",
+              "imageUrl": "string | null",
+              "createdAt": "string (ISO date)",
+              "updatedAt": "string (ISO date)"
+            }
+          },
+          "400": {
+            "error": "Failed to update expense"
+          },
+          "401": {
+            "error": "User not authenticated"
+          },
+          "403": {
+            "error": "Not authorized to update this expense"
+          },
+          "404": {
+            "error": "Expense not found"
+          }
+        }
+      },
+      "delete": {
+        "method": "DELETE",
+        "path": "/api/expenses/:id",
+        "description": "Delete expense",
+        "authentication": true,
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "UUID",
+              "required": true,
+              "description": "Expense ID"
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "message": "Expense deleted successfully"
+          },
+          "401": {
+            "error": "User not authenticated"
+          },
+          "403": {
+            "error": "Not authorized to delete this expense"
+          },
+          "404": {
+            "error": "Expense not found"
+          },
+          "500": {
+            "error": "Failed to delete expense"
+          }
+        }
+      }
+    },
+    "settlements": {
+      "list": {
+        "method": "GET",
+        "path": "/api/settlements",
+        "description": "Get all settlements",
+        "authentication": true,
+        "parameters": {},
+        "response": {
+          "200": {
+            "settlements": [
+              {
+                "id": "string (UUID)",
+                "payerId": "string (UUID)",
+                "payeeId": "string (UUID)",
+                "amount": "string (decimal)",
+                "description": "string | null",
+                "imageUrl": "string | null",
+                "createdAt": "string (ISO date)"
+              }
+            ]
+          },
+          "401": {
+            "error": "User not authenticated"
+          },
+          "500": {
+            "error": "Failed to fetch settlements"
+          }
+        }
+      },
+      "create": {
+        "method": "POST",
+        "path": "/api/settlements",
+        "description": "Create new settlement",
+        "authentication": true,
+        "parameters": {
+          "body": {
+            "payeeId": {
+              "type": "string",
+              "format": "UUID",
+              "required": true,
+              "example": "550e8400-e29b-41d4-a716-446655440001",
+              "description": "ID of user receiving payment"
+            },
+            "amount": {
+              "type": "string",
+              "required": true,
+              "format": "decimal",
+              "example": "75.50"
+            },
+            "description": {
+              "type": "string",
+              "required": false,
+              "example": "Settlement for shared expenses"
+            },
+            "imageUrl": {
+              "type": "string",
+              "required": false,
+              "example": "https://example.com/transfer-receipt.jpg",
+              "description": "Bank transfer receipt image"
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "message": "Settlement created successfully",
+            "settlement": {
+              "id": "string (UUID)",
+              "payerId": "string (UUID)",
+              "payeeId": "string (UUID)",
+              "amount": "string (decimal)",
+              "description": "string | null",
+              "imageUrl": "string | null",
+              "createdAt": "string (ISO date)"
+            }
+          },
+          "400": {
+            "error": "Invalid settlement data"
+          },
+          "401": {
+            "error": "User not authenticated"
+          }
+        }
+      }
+    }
+  },
+  "authentication": {
+    "type": "Bearer Token (JWT)",
+    "header": "Authorization: Bearer <token>",
+    "description": "JWT token obtained from login endpoint",
+    "expiration": "Token expiration time depends on server configuration"
+  },
+  "commonHeaders": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer <token> (for authenticated endpoints)"
+  },
+  "errorCodes": {
+    "200": "OK - Request successful",
+    "201": "Created - Resource created successfully",
+    "400": "Bad Request - Invalid request data",
+    "401": "Unauthorized - Authentication required or invalid token",
+    "403": "Forbidden - No permission to access resource",
+    "404": "Not Found - Resource not found",
+    "500": "Internal Server Error - Server error"
+  },
+  "dataTypes": {
+    "UUID": "Universally Unique Identifier (e.g., 550e8400-e29b-41d4-a716-446655440000)",
+    "ISO Date": "ISO 8601 date format (e.g., 2025-01-06T10:30:00.000Z)",
+    "Decimal": "Numeric value as string (e.g., '150.75')",
+    "JWT": "JSON Web Token for authentication"
+  },
+  "examples": {
+    "curlCommands": {
+      "register": "curl -X POST http://localhost:3001/api/auth/register -H 'Content-Type: application/json' -d '{\"email\":\"user@example.com\",\"password\":\"password123\",\"firstName\":\"John\",\"lastName\":\"Doe\"}'",
+      "login": "curl -X POST http://localhost:3001/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"user@example.com\",\"password\":\"password123\"}'",
+      "getExpenses": "curl -X GET http://localhost:3001/api/expenses -H 'Authorization: Bearer <token>'",
+      "createExpense": "curl -X POST http://localhost:3001/api/expenses -H 'Content-Type: application/json' -H 'Authorization: Bearer <token>' -d '{\"title\":\"Grocery Shopping\",\"amount\":\"150.75\",\"description\":\"Weekly shopping\",\"isShared\":true}'",
+      "createSettlement": "curl -X POST http://localhost:3001/api/settlements -H 'Content-Type: application/json' -H 'Authorization: Bearer <token>' -d '{\"payeeId\":\"550e8400-e29b-41d4-a716-446655440001\",\"amount\":\"75.50\",\"description\":\"Settlement payment\"}'"
+    }
+  }
+}
