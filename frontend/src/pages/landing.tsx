@@ -62,7 +62,7 @@ export default function Landing() {
         description: "Đăng nhập thành công!",
       });
     } catch (error: any) {
-      toast({
+      toast({ 
         title: "Lỗi đăng nhập",
         description: error.message,
         variant: "destructive",
