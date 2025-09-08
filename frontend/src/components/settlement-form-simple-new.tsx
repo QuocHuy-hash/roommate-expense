@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { settlementsAPI, handleAPIError } from "@/lib/api";
 
 interface SettlementFormProps {
   onSuccess: () => void;
@@ -7,6 +9,7 @@ interface SettlementFormProps {
 
 export default function SettlementFormSimple({ onSuccess }: SettlementFormProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     payeeId: "",
     amount: "",
@@ -15,7 +18,11 @@ export default function SettlementFormSimple({ onSuccess }: SettlementFormProps)
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock users data
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+  };
+
+  // Mock users data - TODO: Replace with API call to get roommates
   const mockUsers = [
     { id: "user-2", firstName: "Huy", lastName: "Nguyễn" },
     { id: "user-3", firstName: "An", lastName: "Trần" },
@@ -54,14 +61,20 @@ export default function SettlementFormSimple({ onSuccess }: SettlementFormProps)
     setIsSubmitting(true);
 
     try {
-      // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const settlementData = {
+        payeeId: formData.payeeId,
+        amount: formData.amount,
+        description: formData.description || undefined,
+      };
+
+      const response = await settlementsAPI.create(settlementData);
       
-      const selectedUser = mockUsers.find(u => u.id === formData.payeeId);
+      // Invalidate settlements query to refresh data
+      queryClient.invalidateQueries({ queryKey: ['settlements'] });
       
       toast({
-        title: "✅ Thành công",
-        description: `Đã tạo thanh toán ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseFloat(formData.amount))} cho ${selectedUser?.firstName} ${selectedUser?.lastName}`,
+        title: "Thành công!",
+        description: `Đã tạo thanh toán ${formatCurrency(parseFloat(response.settlement.amount))}`,
       });
       
       // Reset form
@@ -73,10 +86,10 @@ export default function SettlementFormSimple({ onSuccess }: SettlementFormProps)
       });
       
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Lỗi",
-        description: "Không thể tạo thanh toán. Vui lòng thử lại.",
+        description: handleAPIError(error),
         variant: "destructive",
       });
     } finally {

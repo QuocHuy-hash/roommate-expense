@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { expensesAPI, handleAPIError } from "@/lib/api";
 
 interface ExpenseFormProps {
@@ -8,6 +9,7 @@ interface ExpenseFormProps {
 
 export default function ExpenseFormSimple({ onSuccess }: ExpenseFormProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
@@ -15,6 +17,10 @@ export default function ExpenseFormSimple({ onSuccess }: ExpenseFormProps) {
     isShared: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,12 +53,10 @@ export default function ExpenseFormSimple({ onSuccess }: ExpenseFormProps) {
         isShared: formData.isShared,
       };
 
-      const response = await expensesAPI.create(expenseData);
+   await expensesAPI.create(expenseData);
       
-      toast({
-        title: "✅ Thành công",
-        description: `Đã thêm chi tiêu "${response.expense.title}" - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseFloat(response.expense.amount))}`,
-      });
+      // Invalidate expenses query to refresh data
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
       
       // Reset form
       setFormData({

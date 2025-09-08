@@ -42,12 +42,11 @@ export default function LoginForm({ isOpen, onClose, onSwitchToRegister }: Login
     setIsSubmitting(true);
 
     try {
-      const userData = await login(formData.email, formData.password);
-      console.log('Login form - received user data:', userData);
+      await login(formData.email, formData.password);
       
       toast({
         title: "✅ Thành công",
-        description: "Đăng nhập thành công! Đang chuyển hướng...",
+        description: "Đăng nhập thành công!",
       });
       
       // Reset form
@@ -56,16 +55,8 @@ export default function LoginForm({ isOpen, onClose, onSwitchToRegister }: Login
         password: "",
       });
       
-      // Close modal first
       onClose();
-      
-      // Force a small delay to ensure state updates are processed
-      setTimeout(() => {
-        console.log('Login completed - should redirect to home now');
-      }, 100);
-      
     } catch (error: any) {
-      console.error('Login form error:', error);
       toast({
         title: "Lỗi",
         description: error.message || "Đăng nhập thất bại. Vui lòng thử lại.",
