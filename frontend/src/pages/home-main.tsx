@@ -15,6 +15,7 @@ export default function HomeMain() {
   const { user, logout } = useAuth();
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false); // Tách riêng cho thanh toán nhanh
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
 
@@ -328,19 +329,31 @@ export default function HomeMain() {
               {/* Cân bằng */}
               <Card className={`border-l-4 ${summaryData.isOwing ? 'border-l-red-500' : 'border-l-green-500'}`}>
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Cân bằng</p>
-                      <p className={`text-lg font-bold ${summaryData.isOwing ? 'text-red-600' : 'text-green-600'}`}>
-                        {formatCurrency(summaryData.netBalance)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {summaryData.isOwing ? 'Bạn nợ' : 'Bạn được nợ'}
-                      </p>
-                    </div>
-                    <div className={`w-10 h-10 ${summaryData.isOwing ? 'bg-red-100' : 'bg-green-100'} rounded-full flex items-center justify-center`}>
-                      <CreditCard className={`w-5 h-5 ${summaryData.isOwing ? 'text-red-500' : 'text-green-500'}`} />
-                    </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Cân bằng</p>
+                    <p className={`text-lg font-bold ${summaryData.isOwing ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(summaryData.netBalance)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {summaryData.isOwing ? 'Bạn nợ' : 'Bạn được nợ'}
+                    </p>
+                    {/* Nút thanh toán nhanh khi đang nợ */}
+                    {summaryData.isOwing && summaryData.netBalance > 0 && (
+                      <Dialog open={isQuickPaymentOpen} onOpenChange={setIsQuickPaymentOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className="mt-2 bg-red-600 hover:bg-red-700 text-white text-xs w-full">
+                            Thanh toán {formatCurrency(summaryData.netBalance)}đ
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="settlement-form-description">
+                          <SettlementFormSimple 
+                            onSuccess={() => setIsQuickPaymentOpen(false)}
+                            defaultAmount={summaryData.netBalance.toString()}
+                            defaultDescription={`Thanh toán cân bằng chi tiêu chung`}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </div>
                 </CardContent>
               </Card>

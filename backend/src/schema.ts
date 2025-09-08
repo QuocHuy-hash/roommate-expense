@@ -45,6 +45,7 @@ export const expenses = pgTable("expenses", {
   description: text("description"),
   payerId: varchar("payer_id").notNull().references(() => users.id),
   isShared: boolean("is_shared").notNull().default(true),
+  isSettled: boolean("is_settled").notNull().default(false), // Đã được thanh toán hay chưa
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -93,11 +94,21 @@ export const settlementsRelations = relations(settlements, ({ one }) => ({
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   payerId: true,
+  isSettled: true, // Không cho phép client set isSettled khi tạo mới
   createdAt: true,
   updatedAt: true,
 }).extend({
   amount: z.string().min(1, "Amount is required").transform((val) => parseFloat(val)),
 });
+
+export const updateExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  payerId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  amount: z.string().min(1, "Amount is required").transform((val) => parseFloat(val)),
+}).partial(); // Tất cả fields đều optional cho update
 
 export const insertSettlementSchema = createInsertSchema(settlements).omit({
   id: true,

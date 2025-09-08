@@ -5,15 +5,21 @@ import { settlementsAPI, handleAPIError } from "@/lib/api";
 
 interface SettlementFormProps {
   onSuccess: () => void;
+  defaultAmount?: string;
+  defaultDescription?: string;
 }
 
-export default function SettlementFormSimple({ onSuccess }: SettlementFormProps) {
+export default function SettlementFormSimple({ 
+  onSuccess, 
+  defaultAmount = "", 
+  defaultDescription = "" 
+}: SettlementFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     payeeId: "",
-    amount: "",
-    description: "",
+    amount: defaultAmount,
+    description: defaultDescription,
     paymentMethod: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);

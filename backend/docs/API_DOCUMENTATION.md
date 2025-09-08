@@ -132,6 +132,7 @@ Authorization: Bearer <token>
       "description": "Weekly grocery shopping at supermarket",
       "payerId": "550e8400-e29b-41d4-a716-446655440000",
       "isShared": true,
+      "isSettled": false,
       "imageUrl": "https://example.com/receipt.jpg",
       "createdAt": "2025-01-06T10:30:00.000Z",
       "updatedAt": "2025-01-06T10:30:00.000Z"
@@ -177,6 +178,7 @@ Authorization: Bearer <token>
     "description": "Weekly grocery shopping",
     "payerId": "550e8400-e29b-41d4-a716-446655440000",
     "isShared": true,
+    "isSettled": false,
     "imageUrl": "https://example.com/receipt.jpg",
     "createdAt": "2025-01-06T10:30:00.000Z",
     "updatedAt": "2025-01-06T10:30:00.000Z"
@@ -248,6 +250,51 @@ Authorization: Bearer <token>
 
 **Error Responses:**
 - `403`: Không có quyền xóa chi tiêu này
+- `404`: Không tìm thấy chi tiêu
+
+#### PATCH /api/expenses/:id/settle
+Cập nhật trạng thái thanh toán của khoản chi tiêu shared (yêu cầu authentication và quyền sở hữu).
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**URL Parameters:**
+- `id`: UUID của khoản chi tiêu
+
+**Request Body:**
+```json
+{
+  "isSettled": true
+}
+```
+
+**Validation Rules:**
+- `isSettled`: Bắt buộc, phải là boolean
+
+**Success Response (200):**
+```json
+{
+  "message": "Settlement status updated successfully",
+  "expense": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "Grocery Shopping",
+    "amount": "150.75",
+    "description": "Weekly grocery shopping",
+    "payerId": "550e8400-e29b-41d4-a716-446655440000",
+    "isShared": true,
+    "isSettled": true,
+    "imageUrl": "https://example.com/receipt.jpg",
+    "createdAt": "2025-01-06T10:30:00.000Z",
+    "updatedAt": "2025-01-06T11:30:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+- `400`: Dữ liệu request không hợp lệ
+- `403`: Không có quyền cập nhật hoặc chi tiêu không phải là shared
 - `404`: Không tìm thấy chi tiêu
 
 ---
@@ -365,6 +412,7 @@ API sử dụng các HTTP status code chuẩn để chỉ ra kết quả của r
   description?: string; // Description (optional)
   payerId: string;      // UUID of the user who paid
   isShared: boolean;    // Whether expense is shared
+  isSettled: boolean;   // Whether the shared expense has been settled
   imageUrl?: string;    // Receipt image URL (optional)
   createdAt: Date;      // Creation timestamp
   updatedAt: Date;      // Last update timestamp

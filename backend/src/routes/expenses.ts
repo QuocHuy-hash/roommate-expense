@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '../db.js';
-import { expenses, insertExpenseSchema } from '../schema.js';
+import { expenses, insertExpenseSchema, updateExpenseSchema, users } from '../schema.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
@@ -49,11 +49,16 @@ router.get('/', async (req: Request, res: Response) => {
         description: expenses.description,
         payerId: expenses.payerId,
         isShared: expenses.isShared,
+        isSettled: expenses.isSettled,
         imageUrl: expenses.imageUrl,
         createdAt: expenses.createdAt,
         updatedAt: expenses.updatedAt,
+        payerFirstName: users.firstName,
+        payerLastName: users.lastName,
+        payerEmail: users.email,
       })
       .from(expenses)
+      .leftJoin(users, eq(expenses.payerId, users.id))
       .orderBy(desc(expenses.createdAt));
     
     res.json({ expenses: allExpenses });
@@ -192,7 +197,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
-    const validatedData = insertExpenseSchema.parse(req.body);
+    const validatedData = updateExpenseSchema.parse(req.body);
     
     // Check if expense exists and user is the payer
     const [existingExpense] = await db
@@ -209,13 +214,20 @@ router.put('/:id', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Not authorized to update this expense' });
     }
     
+    // Prepare update data
+    const updateData: any = {
+      ...validatedData,
+      updatedAt: new Date(),
+    };
+    
+    // Convert amount to string if provided
+    if (validatedData.amount !== undefined) {
+      updateData.amount = validatedData.amount.toString();
+    }
+    
     const [updatedExpense] = await db
       .update(expenses)
-      .set({
-        ...validatedData,
-        amount: validatedData.amount.toString(),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(expenses.id, id))
       .returning();
     
@@ -315,6 +327,120 @@ router.delete('/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Delete expense error:', error);
     res.status(500).json({ error: 'Failed to delete expense' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/expenses/{id}/settle:
+ *   patch:
+ *     summary: Update settlement status of an expense
+ *     description: Mark a shared expense as settled or unsettled (only by the payer)
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Expense ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isSettled:
+ *                 type: boolean
+ *                 description: Whether the expense has been settled
+ *             required:
+ *               - isSettled
+ *     responses:
+ *       200:
+ *         description: Settlement status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ExpenseResponse'
+ *       400:
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Not authorized to update this expense or expense is not shared
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Expense not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+// Update settlement status of expense
+router.patch('/:id/settle', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isSettled } = req.body;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (typeof isSettled !== 'boolean') {
+      return res.status(400).json({ error: 'isSettled must be a boolean value' });
+    }
+    
+    // Check if expense exists and user is the payer
+    const [existingExpense] = await db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.id, id))
+      .limit(1);
+    
+    if (!existingExpense) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    
+    if (existingExpense.payerId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to update settlement status of this expense' });
+    }
+
+    if (!existingExpense.isShared) {
+      return res.status(403).json({ error: 'Cannot update settlement status of non-shared expense' });
+    }
+    
+    const [updatedExpense] = await db
+      .update(expenses)
+      .set({ 
+        isSettled,
+        updatedAt: new Date()
+      })
+      .where(eq(expenses.id, id))
+      .returning();
+    
+    res.json({ 
+      message: 'Settlement status updated successfully',
+      expense: updatedExpense 
+    });
+  } catch (error) {
+    console.error('Update settlement status error:', error);
+    res.status(500).json({ error: 'Failed to update settlement status' });
   }
 });
 
