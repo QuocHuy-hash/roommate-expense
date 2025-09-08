@@ -11,7 +11,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 3000, // Reduced to 3 seconds for faster fallback
 });
 
 // Request interceptor to add auth token
@@ -60,9 +60,13 @@ export interface Expense {
   description?: string | null;
   payerId: string;
   isShared: boolean;
+  isSettled: boolean;
   imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
+  payerFirstName?: string | null;
+  payerLastName?: string | null;
+  payerEmail?: string | null;
 }
 
 export interface Settlement {
@@ -180,6 +184,11 @@ export const expensesAPI = {
   
   delete: async (id: string): Promise<{ message: string }> => {
     const response = await api.delete(`/api/expenses/${id}`);
+    return response.data;
+  },
+
+  updateSettlementStatus: async (id: string, isSettled: boolean): Promise<ExpenseResponse> => {
+    const response = await api.patch(`/api/expenses/${id}/settle`, { isSettled });
     return response.data;
   },
 };

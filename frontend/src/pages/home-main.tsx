@@ -34,29 +34,56 @@ export default function HomeMain() {
 
   // Calculate summary data from real data
   const calculateSummary = () => {
-    const totalSpent = expenses
+    // Tổng số tiền tôi đã chi
+    const myTotalSpent = expenses
       .filter(expense => expense.payerId === user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    const received = settlements
-      .filter(settlement => settlement.payerId === user?.id)
-      .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
-
-    const sharedExpenses = expenses
+    // Tổng số tiền tôi đã chi cho shared expenses
+    const mySharedExpenses = expenses
       .filter(expense => expense.isShared && expense.payerId === user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    const owedToMe = settlements
+    // Tổng số tiền người khác đã chi cho shared expenses
+    const othersSharedExpenses = expenses
+      .filter(expense => expense.isShared && expense.payerId !== user?.id)
+      .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+
+    // Tổng shared expenses của tất cả mọi người
+    const totalSharedExpenses = mySharedExpenses + othersSharedExpenses;
+
+    // Số người tham gia (giả sử 2 người - có thể cần điều chỉnh theo thực tế)
+    const numberOfPeople = 2;
+
+    // Số tiền tôi nên chi cho shared expenses
+    const mySharOfSharedExpenses = totalSharedExpenses / numberOfPeople;
+
+    // Số tiền tôi đã chi thừa hoặc thiếu cho shared expenses
+    const sharedBalance = mySharedExpenses - mySharOfSharedExpenses;
+
+    // Thanh toán tôi đã nhận
+    const received = settlements
       .filter(settlement => settlement.payeeId === user?.id)
       .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
 
-    const balance = totalSpent - received + owedToMe;
+    // Thanh toán tôi đã trả
+    const paid = settlements
+      .filter(settlement => settlement.payerId === user?.id)
+      .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
+
+    // Cân bằng cuối cùng: nếu âm thì tôi nợ, nếu dương thì người khác nợ tôi
+    const finalBalance = sharedBalance + received - paid;
 
     return {
-      totalSpent,
+      totalSpent: myTotalSpent,
       received,
-      sharedExpenses,
-      balance
+      sharedExpenses: mySharedExpenses,
+      totalSharedExpenses,
+      othersSharedExpenses,
+      mySharOfSharedExpenses,
+      balance: finalBalance,
+      netBalance: Math.abs(finalBalance),
+      isOwing: finalBalance < 0
     };
   };
 
@@ -118,6 +145,9 @@ export default function HomeMain() {
       status: "paid",
       date: new Date(expense.createdAt).toLocaleDateString('vi-VN'),
       createdAt: expense.createdAt, // Keep original for sorting
+      payer: expense.payerFirstName && expense.payerLastName 
+        ? `${expense.payerFirstName} ${expense.payerLastName}` 
+        : (expense.payerId === user?.id ? 'Bạn' : 'Người dùng khác'),
       icon: expense.isShared ? 
         <BarChart3 className="w-5 h-5 text-blue-500" /> : 
         <CreditCard className="w-5 h-5 text-orange-500" />
@@ -130,6 +160,7 @@ export default function HomeMain() {
       status: "paid",
       date: new Date(settlement.createdAt).toLocaleDateString('vi-VN'),
       createdAt: settlement.createdAt, // Keep original for sorting
+      payer: settlement.payerId === user?.id ? 'Bạn' : 'Người dùng khác',
       icon: <TrendingUp className="w-5 h-5 text-green-500" />
     }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
@@ -258,34 +289,16 @@ export default function HomeMain() {
                 </CardContent>
               </Card>
 
-              {/* Đã nhận */}
-              <Card className="border-l-4 border-l-green-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Đã nhận</p>
-                      <p className="text-lg font-bold text-green-600">
-                        {formatCurrency(summaryData.received)}
-                      </p>
-                      <p className="text-xs text-gray-500">Thanh toán đã nhận</p>
-                    </div>
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-green-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Chi tiêu chung */}
+              {/* Bạn chi chung */}
               <Card className="border-l-4 border-l-blue-500">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Chi tiêu chung</p>
+                      <p className="text-sm text-gray-600">Bạn chi chung</p>
                       <p className="text-lg font-bold text-blue-600">
                         {formatCurrency(summaryData.sharedExpenses)}
                       </p>
-                      <p className="text-xs text-gray-500">Chi tiêu được chia sẻ</p>
+                      <p className="text-xs text-gray-500">Của tổng {formatCurrency(summaryData.totalSharedExpenses)}</p>
                     </div>
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <BarChart3 className="w-5 h-5 text-blue-500" />
@@ -294,19 +307,39 @@ export default function HomeMain() {
                 </CardContent>
               </Card>
 
+              {/* Bạn nên chi */}
+              <Card className="border-l-4 border-l-orange-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Bạn nên chi</p>
+                      <p className="text-lg font-bold text-orange-600">
+                        {formatCurrency(summaryData.mySharOfSharedExpenses)}
+                      </p>
+                      <p className="text-xs text-gray-500">Phần của bạn (50%)</p>
+                    </div>
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-orange-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Cân bằng */}
-              <Card className="border-l-4 border-l-red-500">
+              <Card className={`border-l-4 ${summaryData.isOwing ? 'border-l-red-500' : 'border-l-green-500'}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Cân bằng</p>
-                      <p className="text-lg font-bold text-red-600">
-                        {formatCurrency(summaryData.balance)}
+                      <p className={`text-lg font-bold ${summaryData.isOwing ? 'text-red-600' : 'text-green-600'}`}>
+                        {formatCurrency(summaryData.netBalance)}
                       </p>
-                      <p className="text-xs text-gray-500">Bạn nợ</p>
+                      <p className="text-xs text-gray-500">
+                        {summaryData.isOwing ? 'Bạn nợ' : 'Bạn được nợ'}
+                      </p>
                     </div>
-                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-red-500" />
+                    <div className={`w-10 h-10 ${summaryData.isOwing ? 'bg-red-100' : 'bg-green-100'} rounded-full flex items-center justify-center`}>
+                      <CreditCard className={`w-5 h-5 ${summaryData.isOwing ? 'text-red-500' : 'text-green-500'}`} />
                     </div>
                   </div>
                 </CardContent>
@@ -352,7 +385,7 @@ export default function HomeMain() {
                           <span className="text-sm ml-1">đ</span>
                         </div>
                         <p className="text-xs text-gray-400">{transaction.date}</p>
-                        <p className="text-xs text-gray-400">Bạn đã trả</p>
+                        <p className="text-xs text-gray-400">Người trả: {transaction.payer}</p>
                       </div>
                     </div>
                   ))}

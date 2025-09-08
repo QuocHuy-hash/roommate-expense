@@ -48,14 +48,6 @@ export default function LandingPage() {
               Xem báo cáo chi tiết về chi tiêu và thanh toán của từng người
             </p>
           </div>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center">
-            <div className="text-3xl mb-3">💳</div>
-            <h3 className="text-lg font-semibold text-white mb-2">Thanh toán dễ dàng</h3>
-            <p className="text-blue-100 text-sm">
-              Tính toán và thanh toán công nợ giữa các thành viên một cách nhanh chóng
-            </p>
-          </div>
         </div>
 
         {/* Action Buttons */}
