@@ -12,7 +12,6 @@ import {
 } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   Receipt,
   Handshake,
@@ -175,7 +174,7 @@ export default function TransactionListEnhanced() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 space-y-3">
+    <div className="min-h-screen bg-gray-50 p-1 space-y-3">
       {transactions.map((transaction) => {
         const isExpanded = expandedCards.has(transaction.id);
         const isLoading = loadingActions.has(transaction.id);

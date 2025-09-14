@@ -194,11 +194,7 @@ export default function HomeMain() {
           </div>
           <div className="flex items-center space-x-2">
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-              <DialogTrigger asChild>
-                <button className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
-                  <Settings className="w-4 h-4" />
-                </button>
-              </DialogTrigger>
+              
               <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="profile-form-description">
                 <ProfileForm onSuccess={() => setIsSettingsOpen(false)} />
               </DialogContent>
@@ -235,7 +231,7 @@ export default function HomeMain() {
           </div>
 
           {/* Compact Summary Grid */}
-          <div className="px-4 py-3">
+          <div className="px-2 py-1">
             <div className="grid grid-cols-2 gap-2">
               {/* Tổng chi */}
               <div className="bg-white rounded-lg p-3 border-l-4 border-l-red-500 shadow-sm">
@@ -348,7 +344,7 @@ export default function HomeMain() {
 
       {/* Expenses Tab */}
       {activeTab === 'expenses' && (
-        <div className="px-4 py-3">
+        <div className="px-2 py-1">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Danh sách chi tiêu</h2>
           </div>
@@ -358,7 +354,7 @@ export default function HomeMain() {
 
       {/* History Tab */}
       {activeTab === 'history' && (
-        <div className="px-4 py-3">
+        <div className="px-2 py-1">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Lịch sử thanh toán</h2>
           </div>
@@ -368,7 +364,7 @@ export default function HomeMain() {
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <div className="px-4 py-3">
+        <div className="px-2 py-1">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Thông tin cá nhân</h2>
           </div>
