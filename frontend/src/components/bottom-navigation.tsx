@@ -1,4 +1,4 @@
-import { BarChart3, CreditCard, TrendingUp, User } from "lucide-react";
+import { BarChart3, CreditCard, User } from "lucide-react";
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -20,12 +20,6 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
       color: 'text-green-600'
     },
     { 
-      id: 'reports', 
-      label: 'Thanh toán', 
-      icon: <TrendingUp className="w-5 h-5" />,
-      color: 'text-orange-600'
-    },
-    { 
       id: 'profile', 
       label: 'Cá nhân', 
       icon: <User className="w-5 h-5" />,
@@ -35,7 +29,7 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-3">
         {navItems.map((item) => (
           <button
             key={item.id}

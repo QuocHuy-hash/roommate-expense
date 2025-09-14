@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, CreditCard, TrendingDown, TrendingUp, BarChart3, Settings, LogOut, ChevronRight, Home, Receipt, History, User } from "lucide-react";
 import ExpenseFormSimple from "@/components/expense-form-simple";
-import SettlementFormSimple from "@/components/settlement-form-simple-new";
-import SettlementFormWithExpenses from "@/components/settlement-form-with-expenses";
 import ProfileForm from "@/components/profile-form";
-import TransactionListEnhanced from "@/components/transaction-list-enhanced";
+import TransactionListEnhanced from "@/components/transaction-list-enhanced-new";
 import PaymentHistoryList from "@/components/payment-history-list";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,10 +14,7 @@ import { expensesAPI, settlementsAPI, type Expense, type Settlement } from "@/li
 export default function HomeMain() {
   const { user, logout } = useAuth();
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
-  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showSettlementDialog, setShowSettlementDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
 
   // Fetch expenses and settlements from API
@@ -184,15 +179,20 @@ export default function HomeMain() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Compact Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-blue-600 text-white px-4 py-4 shadow-xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">🏠</span>
-            <span className="font-medium text-sm">RoomMate Expense</span>
+          <div className="flex items-center space-x-3">
+            <div className="bg-white/20 rounded-full p-2">
+              <span className="text-2xl">🏠</span>
+            </div>
+            <div>
+              <span className="font-bold text-lg">RoomMate Expense</span>
+              <div className="text-purple-100 text-sm">Quản lý chi tiêu thông minh</div>
+            </div>
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
                 <button className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
@@ -212,40 +212,23 @@ export default function HomeMain() {
             </button>
           </div>
         </div>
-        <div className="mt-1">
-          <span className="text-xs opacity-90">
-            👋 Xin chào, {user?.firstName} {user?.lastName}!
-          </span>
-        </div>
       </div>
 
       {/* Tab Content */}
       {activeTab === 'home' && (
         <>
-          {/* Compact Action Buttons */}
-          <div className="px-4 py-3 bg-white border-b">
-            <div className="grid grid-cols-2 gap-2">
+          {/* Enhanced Action Buttons */}
+          <div className="px-4 py-4 bg-white/80 backdrop-blur-sm border-b border-gray-200">
+            <div className="grid grid-cols-1 gap-3">
               <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>
                 <DialogTrigger asChild>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center transition-colors">
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Thêm chi tiêu
+                  <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-2 rounded-xl font-semibold text-base flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <Plus className="w-3 h-3 mr-2" />
+                    Thêm chi tiêu mới
                   </button>
                 </DialogTrigger>
                 <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="expense-form-description">
                   <ExpenseFormSimple onSuccess={() => setIsExpenseOpen(false)} />
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-                <DialogTrigger asChild>
-                  <button className="border-2 border-gray-300 hover:border-gray-400 py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center transition-colors">
-                    <CreditCard className="w-4 h-4 mr-1.5" />
-                    Thanh toán
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="settlement-form-description">
-                  <SettlementFormSimple onSuccess={() => setIsPaymentOpen(false)} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -274,11 +257,10 @@ export default function HomeMain() {
               <div className="bg-white rounded-lg p-3 border-l-4 border-l-blue-500 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-xs text-gray-600 mb-0.5">Bạn chi chung</p>
+                    <p className="text-xs text-gray-600 mb-0.5">Tổng chi tiêu chung</p>
                     <p className="text-base font-bold text-blue-600 mb-0.5">
-                      {formatCurrency(summaryData.sharedExpenses)}
+                     {formatCurrency(summaryData.totalSharedExpenses)} đ
                     </p>
-                    <p className="text-[10px] text-gray-500">Của {formatCurrency(summaryData.totalSharedExpenses)}</p>
                   </div>
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center ml-2">
                     <BarChart3 className="w-3 h-3 text-blue-500" />
@@ -290,7 +272,7 @@ export default function HomeMain() {
               <div className="bg-white rounded-lg p-3 border-l-4 border-l-orange-500 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-xs text-gray-600 mb-0.5">Bạn nên chi</p>
+                    <p className="text-xs text-gray-600 mb-0.5">Số tiền chia</p>
                     <p className="text-base font-bold text-orange-600 mb-0.5">
                       {formatCurrency(summaryData.mySharOfSharedExpenses)}
                     </p>
@@ -312,22 +294,6 @@ export default function HomeMain() {
                   <p className="text-[10px] text-gray-500 mb-2">
                     {summaryData.isOwing ? 'Bạn nợ' : 'Bạn được nợ'}
                   </p>
-                  {summaryData.isOwing && summaryData.netBalance > 0 && (
-                    <Dialog open={isQuickPaymentOpen} onOpenChange={setIsQuickPaymentOpen}>
-                      <DialogTrigger asChild>
-                        <button className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-2 rounded font-medium transition-colors">
-                          Thanh toán {formatCurrency(summaryData.netBalance)}đ
-                        </button>
-                      </DialogTrigger>
-                      <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="settlement-form-description">
-                        <SettlementFormSimple 
-                          onSuccess={() => setIsQuickPaymentOpen(false)}
-                          defaultAmount={summaryData.netBalance.toString()}
-                          defaultDescription={`Thanh toán cân bằng chi tiêu chung`}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  )}
                 </div>
               </div>
             </div>
@@ -390,41 +356,6 @@ export default function HomeMain() {
         </div>
       )}
 
-      {/* Settlements Tab */}
-      {activeTab === 'settlements' && (
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Thanh toán</h2>
-            <Dialog open={showSettlementDialog} onOpenChange={setShowSettlementDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="flex items-center space-x-1">
-                  <Plus className="w-3 h-3" />
-                  <span className="text-xs">Ghi nhận</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <SettlementFormWithExpenses 
-                  onSuccess={() => setShowSettlementDialog(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <h3 className="font-medium text-blue-900 mb-2 text-sm">💡 Hướng dẫn thanh toán</h3>
-              <ul className="text-xs text-blue-800 space-y-1">
-                <li>• Chọn người nhận tiền từ danh sách roommate</li>
-                <li>• Chọn các khoản chi tiêu cần thanh toán (tùy chọn)</li>
-                <li>• Nhập số tiền và phương thức thanh toán</li>
-                <li>• Hệ thống sẽ tự động đánh dấu các khoản đã thanh toán</li>
-              </ul>
-            </div>
-            <TransactionListEnhanced />
-          </div>
-        </div>
-      )}
-
       {/* History Tab */}
       {activeTab === 'history' && (
         <div className="px-4 py-3">
@@ -478,11 +409,10 @@ export default function HomeMain() {
 
       {/* Fixed Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-4">
           {[
             { id: 'home', icon: Home, label: 'Trang chủ' },
             { id: 'expenses', icon: Receipt, label: 'Chi tiêu' },
-            { id: 'settlements', icon: CreditCard, label: 'Thanh toán' },
             { id: 'history', icon: History, label: 'Lịch sử' },
             { id: 'profile', icon: User, label: 'Cá nhân' }
           ].map((tab) => (
