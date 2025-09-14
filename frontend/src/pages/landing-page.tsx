@@ -3,6 +3,8 @@ import LoginForm from "@/components/login-form";
 import RegisterForm from "@/components/register-form";
 
 export default function LandingPage() {
+  console.log('🚀 LandingPage component rendering...');
+  
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 

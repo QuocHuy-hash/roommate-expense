@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CreditCard, TrendingDown, TrendingUp, BarChart3, Settings, LogOut } from "lucide-react";
+import { Plus, CreditCard, TrendingDown, TrendingUp, BarChart3, Settings, LogOut, ChevronRight, Home, Receipt, History, User } from "lucide-react";
 import ExpenseFormSimple from "@/components/expense-form-simple";
 import SettlementFormSimple from "@/components/settlement-form-simple-new";
+import SettlementFormWithExpenses from "@/components/settlement-form-with-expenses";
 import ProfileForm from "@/components/profile-form";
-import BottomNavigation from "@/components/bottom-navigation";
+import TransactionListEnhanced from "@/components/transaction-list-enhanced";
+import PaymentHistoryList from "@/components/payment-history-list";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -15,8 +17,9 @@ export default function HomeMain() {
   const { user, logout } = useAuth();
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false); // Tách riêng cho thanh toán nhanh
+  const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showSettlementDialog, setShowSettlementDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
 
   // Fetch expenses and settlements from API
@@ -35,44 +38,31 @@ export default function HomeMain() {
 
   // Calculate summary data from real data
   const calculateSummary = () => {
-    // Tổng số tiền tôi đã chi
     const myTotalSpent = expenses
       .filter(expense => expense.payerId === user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    // Tổng số tiền tôi đã chi cho shared expenses
     const mySharedExpenses = expenses
       .filter(expense => expense.isShared && expense.payerId === user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    // Tổng số tiền người khác đã chi cho shared expenses
     const othersSharedExpenses = expenses
       .filter(expense => expense.isShared && expense.payerId !== user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    // Tổng shared expenses của tất cả mọi người
     const totalSharedExpenses = mySharedExpenses + othersSharedExpenses;
-
-    // Số người tham gia (giả sử 2 người - có thể cần điều chỉnh theo thực tế)
     const numberOfPeople = 2;
-
-    // Số tiền tôi nên chi cho shared expenses
     const mySharOfSharedExpenses = totalSharedExpenses / numberOfPeople;
-
-    // Số tiền tôi đã chi thừa hoặc thiếu cho shared expenses
     const sharedBalance = mySharedExpenses - mySharOfSharedExpenses;
 
-    // Thanh toán tôi đã nhận
     const received = settlements
       .filter(settlement => settlement.payeeId === user?.id)
       .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
 
-    // Thanh toán tôi đã trả
     const paid = settlements
       .filter(settlement => settlement.payerId === user?.id)
       .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
 
-    // Cân bằng cuối cùng: nếu âm thì tôi nợ, nếu dương thì người khác nợ tôi
     const finalBalance = sharedBalance + received - paid;
 
     return {
@@ -90,12 +80,10 @@ export default function HomeMain() {
 
   const summaryData = calculateSummary();
 
-  // Function to get icon based on transaction type and title
   const getTransactionIcon = (type: string, title: string) => {
     if (type === 'settlement') return '💳';
     
-    // Map expense titles to appropriate icons
-    const iconMap: { [key: string]: string } = {
+    const iconMap = {
       'đồ ăn': '🍕',
       'pizza': '🍕',
       'ăn uống': '🍕',
@@ -120,11 +108,9 @@ export default function HomeMain() {
       }
     }
     
-    // Default icons
     return type === 'shared' ? '🍕' : '🛒';
   };
 
-  // Function to get background color
   const getBackgroundColor = (type: string, title: string) => {
     if (type === 'settlement') return 'bg-blue-500';
     
@@ -133,19 +119,18 @@ export default function HomeMain() {
     if (titleLower.includes('nước')) return 'bg-blue-400';
     if (titleLower.includes('ăn') || titleLower.includes('pizza') || titleLower.includes('thức ăn')) return 'bg-red-200';
     
-    return 'bg-red-300'; // default
+    return 'bg-red-300';
   };
 
-  // Convert expenses and settlements to transaction format
   const recentTransactions = [
-    ...expenses.slice(0, 5).map((expense: Expense) => ({
+    ...expenses.slice(0, 5).map((expense) => ({
       id: expense.id,
       title: expense.title,
       type: expense.isShared ? "shared" : "personal",
       amount: parseFloat(expense.amount),
       status: "paid",
       date: new Date(expense.createdAt).toLocaleDateString('vi-VN'),
-      createdAt: expense.createdAt, // Keep original for sorting
+      createdAt: expense.createdAt,
       payer: expense.payerFirstName && expense.payerLastName 
         ? `${expense.payerFirstName} ${expense.payerLastName}` 
         : (expense.payerId === user?.id ? 'Bạn' : 'Người dùng khác'),
@@ -153,21 +138,20 @@ export default function HomeMain() {
         <BarChart3 className="w-5 h-5 text-blue-500" /> : 
         <CreditCard className="w-5 h-5 text-orange-500" />
     })),
-    ...settlements.slice(0, 3).map((settlement: Settlement) => ({
+    ...settlements.slice(0, 3).map((settlement) => ({
       id: settlement.id,
       title: settlement.description || "Thanh toán",
       type: "settlement",
       amount: parseFloat(settlement.amount),
       status: "paid",
       date: new Date(settlement.createdAt).toLocaleDateString('vi-VN'),
-      createdAt: settlement.createdAt, // Keep original for sorting
+      createdAt: settlement.createdAt,
       payer: settlement.payerId === user?.id ? 'Bạn' : 'Người dùng khác',
       icon: <TrendingUp className="w-5 h-5 text-green-500" />
     }))
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
 
-  const formatCurrency = (amount: number) => {
-    // Format number with dots as thousands separators
+  const formatCurrency = (amount : number) => {
     const formatted = Math.abs(amount).toLocaleString('de-DE');
     return `${formatted}`;
   };
@@ -201,54 +185,52 @@ export default function HomeMain() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4">
+      {/* Compact Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-xl">🏠</span>
-            <span className="font-semibold">RoomMate Expense</span>
+            <span className="text-lg">🏠</span>
+            <span className="font-medium text-sm">RoomMate Expense</span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-white">
-                  <Settings className="w-5 h-5" />
-                </Button>
+                <button className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+                  <Settings className="w-4 h-4" />
+                </button>
               </DialogTrigger>
               <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="profile-form-description">
                 <ProfileForm onSuccess={() => setIsSettingsOpen(false)} />
               </DialogContent>
             </Dialog>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white hover:text-red-200" 
+            <button 
+              className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
               onClick={logout}
               title="Đăng xuất"
             >
-              <LogOut className="w-5 h-5" />
-            </Button>
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
-        <div className="mt-2">
-          <span className="text-sm opacity-90">
+        <div className="mt-1">
+          <span className="text-xs opacity-90">
             👋 Xin chào, {user?.firstName} {user?.lastName}!
           </span>
         </div>
       </div>
 
-      {/* Main Content - only show home tab content for now */}
+      {/* Tab Content */}
       {activeTab === 'home' && (
         <>
-          {/* Action Buttons */}
-          <div className="p-4 bg-white">
-            <div className="flex space-x-3">
+          {/* Compact Action Buttons */}
+          <div className="px-4 py-3 bg-white border-b">
+            <div className="grid grid-cols-2 gap-2">
               <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>
                 <DialogTrigger asChild>
-                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-lg">
-                    <Plus className="w-4 h-4 mr-2" />
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center transition-colors">
+                    <Plus className="w-4 h-4 mr-1.5" />
                     Thêm chi tiêu
-                  </Button>
+                  </button>
                 </DialogTrigger>
                 <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="expense-form-description">
                   <ExpenseFormSimple onSuccess={() => setIsExpenseOpen(false)} />
@@ -257,10 +239,10 @@ export default function HomeMain() {
 
               <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="flex-1 h-12 rounded-lg border-2">
-                    <CreditCard className="w-4 h-4 mr-2" />
+                  <button className="border-2 border-gray-300 hover:border-gray-400 py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center transition-colors">
+                    <CreditCard className="w-4 h-4 mr-1.5" />
                     Thanh toán
-                  </Button>
+                  </button>
                 </DialogTrigger>
                 <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="settlement-form-description">
                   <SettlementFormSimple onSuccess={() => setIsPaymentOpen(false)} />
@@ -269,163 +251,259 @@ export default function HomeMain() {
             </div>
           </div>
 
-          {/* Summary Cards */}
-          <div className="p-4 pt-0">
-            <div className="grid grid-cols-2 gap-3">
+          {/* Compact Summary Grid */}
+          <div className="px-4 py-3">
+            <div className="grid grid-cols-2 gap-2">
               {/* Tổng chi */}
-              <Card className="border-l-4 border-l-red-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Tổng chi</p>
-                      <p className="text-lg font-bold text-red-600">
-                        {formatCurrency(summaryData.totalSpent)}
-                      </p>
-                      <p className="text-xs text-gray-500">Số tiền bạn đã chi</p>
-                    </div>
-                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                      <TrendingDown className="w-5 h-5 text-red-500" />
-                    </div>
+              <div className="bg-white rounded-lg p-3 border-l-4 border-l-red-500 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-600 mb-0.5">Tổng chi</p>
+                    <p className="text-base font-bold text-red-600 mb-0.5">
+                      {formatCurrency(summaryData.totalSpent)}
+                    </p>
+                    <p className="text-[10px] text-gray-500">Số tiền bạn đã chi</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center ml-2">
+                    <TrendingDown className="w-3 h-3 text-red-500" />
+                  </div>
+                </div>
+              </div>
 
               {/* Bạn chi chung */}
-              <Card className="border-l-4 border-l-blue-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Bạn chi chung</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {formatCurrency(summaryData.sharedExpenses)}
-                      </p>
-                      <p className="text-xs text-gray-500">Của tổng {formatCurrency(summaryData.totalSharedExpenses)}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <BarChart3 className="w-5 h-5 text-blue-500" />
-                    </div>
+              <div className="bg-white rounded-lg p-3 border-l-4 border-l-blue-500 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-600 mb-0.5">Bạn chi chung</p>
+                    <p className="text-base font-bold text-blue-600 mb-0.5">
+                      {formatCurrency(summaryData.sharedExpenses)}
+                    </p>
+                    <p className="text-[10px] text-gray-500">Của {formatCurrency(summaryData.totalSharedExpenses)}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center ml-2">
+                    <BarChart3 className="w-3 h-3 text-blue-500" />
+                  </div>
+                </div>
+              </div>
 
               {/* Bạn nên chi */}
-              <Card className="border-l-4 border-l-orange-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Bạn nên chi</p>
-                      <p className="text-lg font-bold text-orange-600">
-                        {formatCurrency(summaryData.mySharOfSharedExpenses)}
-                      </p>
-                      <p className="text-xs text-gray-500">Phần của bạn (50%)</p>
-                    </div>
-                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-orange-500" />
-                    </div>
+              <div className="bg-white rounded-lg p-3 border-l-4 border-l-orange-500 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-600 mb-0.5">Bạn nên chi</p>
+                    <p className="text-base font-bold text-orange-600 mb-0.5">
+                      {formatCurrency(summaryData.mySharOfSharedExpenses)}
+                    </p>
+                    <p className="text-[10px] text-gray-500">Phần của bạn (50%)</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center ml-2">
+                    <TrendingUp className="w-3 h-3 text-orange-500" />
+                  </div>
+                </div>
+              </div>
 
               {/* Cân bằng */}
-              <Card className={`border-l-4 ${summaryData.isOwing ? 'border-l-red-500' : 'border-l-green-500'}`}>
-                <CardContent className="p-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Cân bằng</p>
-                    <p className={`text-lg font-bold ${summaryData.isOwing ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatCurrency(summaryData.netBalance)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {summaryData.isOwing ? 'Bạn nợ' : 'Bạn được nợ'}
-                    </p>
-                    {/* Nút thanh toán nhanh khi đang nợ */}
-                    {summaryData.isOwing && summaryData.netBalance > 0 && (
-                      <Dialog open={isQuickPaymentOpen} onOpenChange={setIsQuickPaymentOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" className="mt-2 bg-red-600 hover:bg-red-700 text-white text-xs w-full">
-                            Thanh toán {formatCurrency(summaryData.netBalance)}đ
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="settlement-form-description">
-                          <SettlementFormSimple 
-                            onSuccess={() => setIsQuickPaymentOpen(false)}
-                            defaultAmount={summaryData.netBalance.toString()}
-                            defaultDescription={`Thanh toán cân bằng chi tiêu chung`}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <div className={`bg-white rounded-lg p-3 border-l-4 shadow-sm ${summaryData.isOwing ? 'border-l-red-500' : 'border-l-green-500'}`}>
+                <div>
+                  <p className="text-xs text-gray-600 mb-0.5">Cân bằng</p>
+                  <p className={`text-base font-bold mb-1 ${summaryData.isOwing ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatCurrency(summaryData.netBalance)}
+                  </p>
+                  <p className="text-[10px] text-gray-500 mb-2">
+                    {summaryData.isOwing ? 'Bạn nợ' : 'Bạn được nợ'}
+                  </p>
+                  {summaryData.isOwing && summaryData.netBalance > 0 && (
+                    <Dialog open={isQuickPaymentOpen} onOpenChange={setIsQuickPaymentOpen}>
+                      <DialogTrigger asChild>
+                        <button className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-2 rounded font-medium transition-colors">
+                          Thanh toán {formatCurrency(summaryData.netBalance)}đ
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="p-0 w-[90vw] max-w-sm mx-auto" aria-describedby="settlement-form-description">
+                        <SettlementFormSimple 
+                          onSuccess={() => setIsQuickPaymentOpen(false)}
+                          defaultAmount={summaryData.netBalance.toString()}
+                          defaultDescription={`Thanh toán cân bằng chi tiêu chung`}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Giao dịch gần đây */}
-          <div className="p-4 pt-0">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">💰</span>
-                    <h3 className="font-semibold text-gray-800">Giao dịch gần đây</h3>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
-                    Xem tất cả
-                  </Button>
+          {/* Compact Recent Transactions */}
+          <div className="px-4 pb-3">
+            <div className="bg-white rounded-lg shadow-sm">
+              <div className="flex items-center justify-between p-3 border-b">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm">💰</span>
+                  <h3 className="font-medium text-gray-800 text-sm">Giao dịch gần đây</h3>
                 </div>
-                <div className="space-y-1">
-                  {recentTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                      <div className="flex items-center space-x-3">
-                        {/* Icon với background màu */}
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getBackgroundColor(transaction.type, transaction.title)}`}>
-                          <span className="text-white text-lg">{getTransactionIcon(transaction.type, transaction.title)}</span>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 text-base">{transaction.title}</h4>
-                          <p className="text-gray-500 text-sm">
-                            {transaction.type === 'shared' ? 'Chi tiêu chung' : 
-                             transaction.type === 'settlement' ? 'Thanh toán' : 'Chi tiêu cá nhân'}
-                          </p>
-                        </div>
+                <button className="text-blue-600 hover:text-blue-700 text-xs flex items-center">
+                  Xem tất cả
+                  <ChevronRight className="w-3 h-3 ml-0.5" />
+                </button>
+              </div>
+              <div className="divide-y">
+                {recentTransactions.map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getBackgroundColor(transaction.type, transaction.title)}`}>
+                        <span className="text-white text-xs">{getTransactionIcon(transaction.type, transaction.title)}</span>
                       </div>
-                      <div className="text-right">
-                        <div className={`font-bold text-lg flex items-baseline justify-end ${
-                          transaction.type === 'settlement' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          <span>{transaction.type === 'settlement' ? '+' : '-'}</span>
-                          <span>{formatCurrency(transaction.amount)}</span>
-                          <span className="text-sm ml-1">đ</span>
-                        </div>
-                        <p className="text-xs text-gray-400">{transaction.date}</p>
-                        <p className="text-xs text-gray-400">Người trả: {transaction.payer}</p>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 text-sm">{transaction.title}</h4>
+                        <p className="text-gray-500 text-xs">
+                          {transaction.type === 'shared' ? 'Chi tiêu chung' : 
+                           transaction.type === 'settlement' ? 'Thanh toán' : 'Chi tiêu cá nhân'}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="text-right">
+                      <div className={`font-bold text-sm flex items-baseline justify-end ${
+                        transaction.type === 'settlement' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        <span>{transaction.type === 'settlement' ? '+' : '-'}</span>
+                        <span>{formatCurrency(transaction.amount)}</span>
+                        <span className="text-xs ml-0.5">đ</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400">{transaction.date}</p>
+                      <p className="text-[10px] text-gray-400">Người trả: {transaction.payer}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}
 
-      {/* Other tabs content - placeholder for now */}
-      {activeTab !== 'home' && (
-        <div className="p-4 mt-4">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h3 className="text-lg font-semibold mb-2">Chức năng đang phát triển</h3>
-              <p className="text-gray-600">Tính năng này sẽ có trong phiên bản tiếp theo!</p>
+      {/* Expenses Tab */}
+      {activeTab === 'expenses' && (
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Danh sách chi tiêu</h2>
+          </div>
+          <TransactionListEnhanced />
+        </div>
+      )}
+
+      {/* Settlements Tab */}
+      {activeTab === 'settlements' && (
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Thanh toán</h2>
+            <Dialog open={showSettlementDialog} onOpenChange={setShowSettlementDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="flex items-center space-x-1">
+                  <Plus className="w-3 h-3" />
+                  <span className="text-xs">Ghi nhận</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <SettlementFormWithExpenses 
+                  onSuccess={() => setShowSettlementDialog(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-2 text-sm">💡 Hướng dẫn thanh toán</h3>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• Chọn người nhận tiền từ danh sách roommate</li>
+                <li>• Chọn các khoản chi tiêu cần thanh toán (tùy chọn)</li>
+                <li>• Nhập số tiền và phương thức thanh toán</li>
+                <li>• Hệ thống sẽ tự động đánh dấu các khoản đã thanh toán</li>
+              </ul>
+            </div>
+            <TransactionListEnhanced />
+          </div>
+        </div>
+      )}
+
+      {/* History Tab */}
+      {activeTab === 'history' && (
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Lịch sử thanh toán</h2>
+          </div>
+          <PaymentHistoryList />
+        </div>
+      )}
+
+      {/* Profile Tab */}
+      {activeTab === 'profile' && (
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Thông tin cá nhân</h2>
+          </div>
+          <Card className="max-w-md mx-auto">
+            <CardContent className="p-4 space-y-4">
+              <div className="text-center pb-4 border-b">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto mb-3 flex items-center justify-center">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg">{user?.firstName} {user?.lastName}</h3>
+                <p className="text-sm text-gray-600">{user?.email}</p>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Họ và tên</p>
+                  <p className="font-medium text-sm">{user?.firstName} {user?.lastName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Email</p>
+                  <p className="font-medium text-sm">{user?.email}</p>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={logout}
+                className="w-full"
+                size="sm"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Đăng xuất
+              </Button>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+        <div className="grid grid-cols-5">
+          {[
+            { id: 'home', icon: Home, label: 'Trang chủ' },
+            { id: 'expenses', icon: Receipt, label: 'Chi tiêu' },
+            { id: 'settlements', icon: CreditCard, label: 'Thanh toán' },
+            { id: 'history', icon: History, label: 'Lịch sử' },
+            { id: 'profile', icon: User, label: 'Cá nhân' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-1 flex flex-col items-center space-y-1 transition-colors ${
+                activeTab === tab.id 
+                  ? 'text-blue-600 bg-blue-50' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              <span className="text-[10px] font-medium">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Spacer for bottom navigation */}
-      <div className="h-20"></div>
+      <div className="h-16"></div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, ne } from 'drizzle-orm';
 import { db } from '../db.js';
 import { expenses, insertExpenseSchema, updateExpenseSchema, users } from '../schema.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -50,6 +50,8 @@ router.get('/', async (req: Request, res: Response) => {
         payerId: expenses.payerId,
         isShared: expenses.isShared,
         isSettled: expenses.isSettled,
+        isPaid: expenses.isPaid,
+        paymentDate: expenses.paymentDate,
         imageUrl: expenses.imageUrl,
         createdAt: expenses.createdAt,
         updatedAt: expenses.updatedAt,
@@ -441,6 +443,53 @@ router.patch('/:id/settle', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Update settlement status error:', error);
     res.status(500).json({ error: 'Failed to update settlement status' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/expenses/unpaid:
+ *   get:
+ *     summary: Get unpaid expenses
+ *     description: Retrieve all expenses that haven't been paid back yet
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ */
+// Get unpaid expenses
+router.get('/unpaid', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    const unpaidExpenses = await db
+      .select({
+        id: expenses.id,
+        title: expenses.title,
+        amount: expenses.amount,
+        description: expenses.description,
+        payerId: expenses.payerId,
+        isShared: expenses.isShared,
+        createdAt: expenses.createdAt,
+        payerFirstName: users.firstName,
+        payerLastName: users.lastName,
+        payerEmail: users.email,
+      })
+      .from(expenses)
+      .leftJoin(users, eq(expenses.payerId, users.id))
+      .where(and(
+        eq(expenses.isPaid, false),
+        eq(expenses.isShared, true),
+        ne(expenses.payerId, userId) // Only expenses paid by others
+      ))
+      .orderBy(desc(expenses.createdAt));
+    
+    res.json({ expenses: unpaidExpenses });
+  } catch (error) {
+    console.error('Get unpaid expenses error:', error);
+    res.status(500).json({ error: 'Failed to fetch unpaid expenses' });
   }
 });
 

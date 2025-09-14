@@ -43,12 +43,7 @@ export default function LoginForm({ isOpen, onClose, onSwitchToRegister }: Login
 
     try {
       await login(formData.email, formData.password);
-      
-      toast({
-        title: "✅ Thành công",
-        description: "Đăng nhập thành công!",
-      });
-      
+    
       // Reset form
       setFormData({
         email: "",
@@ -139,9 +134,12 @@ export default function LoginForm({ isOpen, onClose, onSwitchToRegister }: Login
               </div>
 
               {/* Demo Info */}
-              <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="bg-blue-50 p-3 rounded-lg space-y-2">
                 <div className="text-xs text-blue-700">
                   <strong>Demo:</strong> Có thể tạo tài khoản mới hoặc sử dụng tài khoản demo
+                </div>
+                <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
+                  <strong>Gợi ý:</strong> Hãy đảm bảo bạn đã đăng ký tài khoản trước khi đăng nhập
                 </div>
               </div>
 

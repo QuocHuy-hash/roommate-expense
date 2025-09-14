@@ -6,14 +6,18 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  console.log('🔐 useAuth hook initialized', { isLoading, isAuthenticated, user: !!user });
+
   // Check if user is logged in on mount
   useEffect(() => {
+    console.log('🔍 useAuth: checking authentication...');
     const checkAuth = () => {
       try {
         const token = localStorage.getItem('auth_token');
         const savedUser = localStorage.getItem('user');
         
         if (!token || !savedUser) {
+          console.log('🔓 No token or saved user found');
           setIsAuthenticated(false);
           setUser(null);
           setIsLoading(false);
@@ -21,15 +25,17 @@ export function useAuth() {
         }
 
         const userData = JSON.parse(savedUser);
+        console.log('✅ Auth found:', { email: userData.email });
         setUser(userData);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('❌ Auth check failed:', error);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
         setIsAuthenticated(false);
         setUser(null);
       } finally {
+        console.log('🏁 Auth check completed');
         setIsLoading(false);
       }
     };
@@ -83,7 +89,9 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log('🔐 Attempting login with:', { email, passwordLength: password.length });
       const response = await authAPI.login({ email, password });
+      console.log('✅ Login successful:', response);
       
       const { user: userData, token } = response;
       
@@ -101,7 +109,8 @@ export function useAuth() {
       
       return userData;
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      console.error('❌ Error response:', error?.response?.data);
       setIsLoading(false);
       throw new Error(handleAPIError(error));
     }

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import ExpenseForm from "./expense-form";
+// import ExpenseForm from "@/components/expense-form";
 import { Receipt, Handshake, Edit2, Trash2, Image as ImageIcon, Loader2, CheckCircle, Clock } from "lucide-react";
 
 type TransactionItem = {
@@ -25,6 +25,8 @@ type TransactionItem = {
   date: string;
   isShared?: boolean;
   isSettled?: boolean;
+  isPaid?: boolean;
+  paymentDate?: string | null;
   payerId?: string;
   payeeId?: string;
   payerName?: string;
@@ -99,15 +101,6 @@ export default function TransactionListEnhanced() {
   const transactions: TransactionItem[] = [
     ...(expensesData?.expenses || []).map((expense: Expense) => {
       const isCurrentUserPayer = user?.id === expense.payerId;
-      console.log('=== EXPENSE DEBUG ===');
-      console.log('Expense title:', expense.title);
-      console.log('Current user ID:', user?.id);
-      console.log('Expense payer ID:', expense.payerId);
-      console.log('Is current user payer?:', isCurrentUserPayer);
-      console.log('Is shared?:', expense.isShared);
-      console.log('Is settled?:', expense.isSettled);
-      console.log('Payer name:', expense.payerFirstName, expense.payerLastName);
-      console.log('===================');
       
       return {
         id: expense.id,
@@ -118,6 +111,8 @@ export default function TransactionListEnhanced() {
         date: expense.createdAt,
         isShared: expense.isShared,
         isSettled: expense.isSettled,
+        isPaid: expense.isPaid,
+        paymentDate: expense.paymentDate,
         payerId: expense.payerId,
         payerName: expense.payerFirstName && expense.payerLastName 
           ? `${expense.payerFirstName} ${expense.payerLastName}` 
@@ -209,26 +204,41 @@ export default function TransactionListEnhanced() {
                           {transaction.isShared ? "Chung" : "Cá nhân"}
                         </Badge>
                         {transaction.isShared && (
-                          <Badge 
-                            variant={transaction.isSettled ? "default" : "secondary"}
-                            className={transaction.isSettled ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200"}
-                          >
-                            {transaction.isSettled ? (
-                              <div className="flex items-center space-x-1">
-                                <CheckCircle className="h-3 w-3" />
-                                <span>
-                                  {transaction.isCurrentUserPayer ? "Đã được trả" : "Đã trả"}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {transaction.isCurrentUserPayer ? "Chưa được trả" : "Chưa trả"}
-                                </span>
-                              </div>
+                          <div className="flex items-center space-x-1">
+                            <Badge 
+                              variant={transaction.isSettled ? "default" : "secondary"}
+                              className={transaction.isSettled ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200"}
+                            >
+                              {transaction.isSettled ? (
+                                <div className="flex items-center space-x-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span>
+                                    {transaction.isCurrentUserPayer ? "Đã được trả" : "Đã trả"}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>
+                                    {transaction.isCurrentUserPayer ? "Chưa được trả" : "Chưa trả"}
+                                  </span>
+                                </div>
+                              )}
+                            </Badge>
+                            
+                            {/* Payment Status Badge */}
+                            {transaction.isPaid && (
+                              <Badge 
+                                variant="default"
+                                className="bg-blue-100 text-blue-800 border-blue-200"
+                              >
+                                <div className="flex items-center space-x-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span>Đã thanh toán</span>
+                                </div>
+                              </Badge>
                             )}
-                          </Badge>
+                          </div>
                         )}
                       </>
                     )}
@@ -334,12 +344,12 @@ export default function TransactionListEnhanced() {
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
-                          {editingExpense && (
+                          {/* {editingExpense && (
                             <ExpenseForm
                               expense={editingExpense}
                               onSuccess={handleEditSuccess}
                             />
-                          )}
+                          )} */}
                         </DialogContent>
                       </Dialog>
                     )}

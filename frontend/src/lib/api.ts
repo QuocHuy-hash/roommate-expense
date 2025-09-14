@@ -61,6 +61,8 @@ export interface Expense {
   payerId: string;
   isShared: boolean;
   isSettled: boolean;
+  isPaid?: boolean; // New field for payment status
+  paymentDate?: string | null; // New field for payment date
   imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -77,6 +79,44 @@ export interface Settlement {
   description?: string | null;
   imageUrl?: string | null;
   createdAt: string;
+}
+
+export interface PaymentHistory {
+  id: string;
+  settlementId: string;
+  payerId: string;
+  payeeId: string;
+  amount: string;
+  paymentMethod: 'bank_transfer' | 'cash' | 'digital_wallet';
+  status: 'pending' | 'completed' | 'failed';
+  description?: string | null;
+  paymentProofUrl?: string | null;
+  paymentDate: string;
+  createdAt: string;
+  payer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  payee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export interface PaidExpense {
+  id: string;
+  amountPaid: string;
+  expense: {
+    id: string;
+    title: string;
+    amount: string;
+    description?: string;
+    createdAt: string;
+  };
 }
 
 // Request types
@@ -113,6 +153,8 @@ export interface CreateSettlementRequest {
   amount: string;
   description?: string;
   imageUrl?: string;
+  paymentMethod?: 'bank_transfer' | 'cash' | 'digital_wallet';
+  expenseIds?: string[]; // Array of expense IDs to mark as paid
 }
 
 // Response types
@@ -138,6 +180,16 @@ export interface SettlementsResponse {
 export interface SettlementResponse {
   message: string;
   settlement: Settlement;
+  paymentHistory?: PaymentHistory;
+}
+
+export interface PaymentHistoryResponse {
+  paymentHistory: PaymentHistory[];
+}
+
+export interface PaymentDetailsResponse {
+  payment: PaymentHistory;
+  paidExpenses: PaidExpense[];
 }
 
 export interface ErrorResponse {
@@ -191,6 +243,11 @@ export const expensesAPI = {
     const response = await api.patch(`/api/expenses/${id}/settle`, { isSettled });
     return response.data;
   },
+
+  getUnpaid: async (): Promise<ExpensesResponse> => {
+    const response = await api.get('/api/expenses/unpaid');
+    return response.data;
+  },
 };
 
 // Settlements API
@@ -204,6 +261,16 @@ export const settlementsAPI = {
     const response = await api.post('/api/settlements', data);
     return response.data;
   },
+
+  getPaymentHistory: async (): Promise<PaymentHistoryResponse> => {
+    const response = await api.get('/api/settlements/payment-history');
+    return response.data;
+  },
+
+  getPaymentDetails: async (id: string): Promise<PaymentDetailsResponse> => {
+    const response = await api.get(`/api/settlements/payment-history/${id}`);
+    return response.data;
+  },
 };
 
 // Utility function to handle API errors
@@ -211,30 +278,35 @@ export const handleAPIError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ErrorResponse>;
     if (axiosError.response?.data?.error) {
-      return axiosError.response.data.error;
+      // Handle specific error messages
+      const errorMessage = axiosError.response.data.error;
+      if (errorMessage === 'Invalid credentials') {
+        return 'Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.';
+      }
+      return errorMessage;
     }
     if (axiosError.response?.status) {
       switch (axiosError.response.status) {
         case 400:
-          return 'Invalid request data';
+          return 'Dữ liệu không hợp lệ';
         case 401:
-          return 'Authentication required';
+          return 'Thông tin đăng nhập không đúng';
         case 403:
-          return 'Access forbidden';
+          return 'Không có quyền truy cập';
         case 404:
-          return 'Resource not found';
+          return 'Không tìm thấy tài nguyên';
         case 500:
-          return 'Internal server error';
+          return 'Lỗi máy chủ nội bộ';
         default:
-          return 'An unexpected error occurred';
+          return 'Đã xảy ra lỗi không mong muốn';
       }
     }
     if (axiosError.code === 'ECONNABORTED') {
-      return 'Request timeout';
+      return 'Hết thời gian chờ kết nối';
     }
     if (axiosError.code === 'ERR_NETWORK') {
-      return 'Network error. Please check your connection.';
+      return 'Lỗi mạng. Vui lòng kiểm tra kết nối internet.';
     }
   }
-  return 'An unexpected error occurred';
+  return 'Đã xảy ra lỗi không mong muốn';
 };
