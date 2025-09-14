@@ -29,7 +29,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
     
-    req.user = decoded as User;
+      if (!decoded) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      req.user = decoded as User;
     next();
   });
 };

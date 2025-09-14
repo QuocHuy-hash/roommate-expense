@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistance } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,65 +65,34 @@ export default function TransactionListEnhanced() {
   });
 
   // Update settlement status mutation
-  const updateSettlementMutation = useMutation({
-    mutationFn: ({ id, isSettled }: { id: string; isSettled: boolean }) =>
-      expensesAPI.updateSettlementStatus(id, isSettled),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expenses"] });
-     
-    },
-    onError: (error) => {
-      const errorMessage = handleAPIError(error);
-      toast({
-        title: "Lỗi",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
 
-  // Combine and sort transactions
-  const transactions: TransactionItem[] = [
-    ...(expensesData?.expenses || []).map((expense: Expense) => {
-      const isCurrentUserPayer = user?.id === expense.payerId;
-      return {
-        id: expense.id,
-        type: "expense" as const,
-        title: expense.title,
-        amount: expense.amount,
-        description: expense.description,
-        date: expense.createdAt,
-        isShared: expense.isShared,
-        isSettled: expense.isSettled,
-        isPaid: expense.isPaid,
-        paymentDate: expense.paymentDate,
-        payerId: expense.payerId,
-        payerName:
-          expense.payerFirstName && expense.payerLastName
-            ? `${expense.payerFirstName} ${expense.payerLastName}`
-            : expense.payerEmail || "Unknown",
-        imageUrl: expense.imageUrl,
-        canEdit: isCurrentUserPayer,
-        canDelete: isCurrentUserPayer,
-        canUpdateSettlement: isCurrentUserPayer && expense.isShared,
-        isCurrentUserPayer: isCurrentUserPayer,
-      };
-    }),
-    ...(settlementsData?.settlements || []).map((settlement) => ({
-      id: settlement.id,
-      type: "settlement" as const,
-      title: `Thanh toán từ ${settlement.payerId} đến ${settlement.payeeId}`,
-      amount: settlement.amount,
-      description: settlement.description,
-      date: settlement.createdAt,
-      payerId: settlement.payerId,
-      payeeId: settlement.payeeId,
-      imageUrl: settlement.imageUrl,
-      canEdit: false,
-      canDelete: false,
-      canUpdateSettlement: false,
-    })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Only show expenses, not settlements, in this list
+  const transactions: TransactionItem[] = (expensesData?.expenses || []).map((expense: Expense) => {
+    const isCurrentUserPayer = user?.id === expense.payerId;
+    return {
+      id: expense.id,
+      type: "expense" as const,
+      title: expense.title,
+      amount: expense.amount,
+      description: expense.description,
+      date: expense.createdAt,
+      isShared: expense.isShared,
+      isSettled: expense.isSettled,
+      isPaid: expense.isPaid,
+      paymentDate: expense.paymentDate,
+      payerId: expense.payerId,
+      payerName:
+        expense.payerFirstName && expense.payerLastName
+          ? `${expense.payerFirstName} ${expense.payerLastName}`
+          : (expense.payerEmail || "Unknown"),
+      imageUrl: expense.imageUrl,
+      canEdit: isCurrentUserPayer,
+      canDelete: isCurrentUserPayer,
+      canUpdateSettlement: isCurrentUserPayer && expense.isShared,
+      isCurrentUserPayer: isCurrentUserPayer,
+    };
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const toggleCard = (id: string) => {
     const newExpanded = new Set(expandedCards);
@@ -132,20 +101,40 @@ export default function TransactionListEnhanced() {
     setExpandedCards(newExpanded);
   };
 
-  const handleSettlementToggle = (id: string, currentStatus: boolean) => {
+  const handleSettlementToggle = async (id: string, currentStatus: boolean) => {
+    // Tìm expense theo id
+    const expense = expensesData?.expenses?.find((e) => e.id === id);
+    if (!expense || currentStatus || !user) return; // Đã settle rồi thì không làm gì
     setLoadingActions((prev) => new Set(prev).add(id));
-    updateSettlementMutation.mutate(
-      { id, isSettled: !currentStatus },
-      {
-        onSettled: () => {
-          setLoadingActions((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
-          });
-        },
-      }
-    );
+    try {
+      // Chỉ ghi nhận phần của user (chia 2)
+      const amount = (parseFloat(expense.amount) / 2).toFixed(2);
+      await settlementsAPI.create({
+        payeeId: user.id, // người trả là bạn
+        payerId: expense.payerId, // người nhận là người đã chi
+        amount,
+        description: expense.title,
+        paymentMethod: 'bank_transfer',
+        expenseIds: [expense.id],
+      });
+      // Invalidate các query liên quan
+      queryClient.invalidateQueries({ queryKey: ["settlements"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["payment-history"] });
+      
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: handleAPIError(error),
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
   };
 
   if (expensesLoading || settlementsLoading) {
@@ -218,14 +207,14 @@ export default function TransactionListEnhanced() {
                                   : "bg-orange-100 text-orange-700"
                                 }`}
                             >
-                              {transaction.isSettled ? "Đã trả" : "Chưa trả"}
+                              {transaction.isSettled && transaction.isPaid ? "Đã trả" : "Chưa trả"}
                             </Badge>
                           )}
-                          {transaction.isPaid && (
+                          {/* {transaction.isPaid && (
                             <Badge className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
                               Đã thanh toán
                             </Badge>
-                          )}
+                          )} */}
                         </>
                       )}
                     </div>
@@ -272,7 +261,7 @@ export default function TransactionListEnhanced() {
                 {transaction.type === "expense" &&
   transaction.isShared &&
   transaction.canUpdateSettlement && (
-    isLoading ? (
+    isLoading  ? (
       <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
     ) : (
       <Checkbox

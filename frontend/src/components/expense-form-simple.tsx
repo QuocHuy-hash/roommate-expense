@@ -55,8 +55,10 @@ export default function ExpenseFormSimple({ onSuccess }: ExpenseFormProps) {
 
    await expensesAPI.create(expenseData);
       
-      // Invalidate expenses query to refresh data
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+  // Invalidate queries để home luôn cập nhật
+  queryClient.invalidateQueries({ queryKey: ['expenses'] });
+  queryClient.invalidateQueries({ queryKey: ['settlements'] });
+  queryClient.invalidateQueries({ queryKey: ['payment-history'] });
       
       // Reset form
       setFormData({

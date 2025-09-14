@@ -150,6 +150,7 @@ export interface UpdateExpenseRequest {
 
 export interface CreateSettlementRequest {
   payeeId: string;
+  payerId: string;
   amount: string;
   description?: string;
   imageUrl?: string;

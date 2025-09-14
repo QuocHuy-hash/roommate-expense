@@ -11,6 +11,7 @@ import {
   users
 } from '../schema.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { alias } from 'drizzle-orm/pg-core';
 
 const router = Router();
 
@@ -197,11 +198,10 @@ router.post('/', async (req: Request, res: Response) => {
 // Get payment history
 router.get('/payment-history', async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
-    
+    // Cho phép public, không kiểm tra userId
+    // Alias cho users
+    const payerUsers = alias(users, 'payer');
+    const payeeUsers = alias(users, 'payee');
     const paymentHistoryRecords = await db
       .select({
         id: paymentHistory.id,
@@ -214,22 +214,21 @@ router.get('/payment-history', async (req: Request, res: Response) => {
         paymentDate: paymentHistory.paymentDate,
         createdAt: paymentHistory.createdAt,
         payer: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
+          id: payerUsers.id,
+          firstName: payerUsers.firstName,
+          lastName: payerUsers.lastName,
+          email: payerUsers.email,
         },
         payee: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
+          id: payeeUsers.id,
+          firstName: payeeUsers.firstName,
+          lastName: payeeUsers.lastName,
+          email: payeeUsers.email,
         }
       })
       .from(paymentHistory)
-      .leftJoin(users, eq(paymentHistory.payerId, users.id))
-      .leftJoin(users, eq(paymentHistory.payeeId, users.id))
-      .where(eq(paymentHistory.payerId, userId))
+      .leftJoin(payerUsers, eq(paymentHistory.payerId, payerUsers.id))
+      .leftJoin(payeeUsers, eq(paymentHistory.payeeId, payeeUsers.id))
       .orderBy(desc(paymentHistory.paymentDate));
     
     res.json({ paymentHistory: paymentHistoryRecords });

@@ -33,32 +33,35 @@ export default function HomeMain() {
 
   // Calculate summary data from real data
   const calculateSummary = () => {
-    const myTotalSpent = expenses
+    // Chỉ lấy các khoản chưa thanh toán
+    const unpaidExpenses = expenses.filter(e => !e.isPaid && !e.isSettled);
+    const myTotalSpent = unpaidExpenses
       .filter(expense => expense.payerId === user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    const mySharedExpenses = expenses
+    const mySharedExpenses = unpaidExpenses
       .filter(expense => expense.isShared && expense.payerId === user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
-    const othersSharedExpenses = expenses
+    const othersSharedExpenses = unpaidExpenses
       .filter(expense => expense.isShared && expense.payerId !== user?.id)
       .reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
 
     const totalSharedExpenses = mySharedExpenses + othersSharedExpenses;
     const numberOfPeople = 2;
     const mySharOfSharedExpenses = totalSharedExpenses / numberOfPeople;
-    const sharedBalance = mySharedExpenses - mySharOfSharedExpenses;
 
-    const received = settlements
-      .filter(settlement => settlement.payeeId === user?.id)
-      .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
-
-    const paid = settlements
+    // Chỉ lấy các settlement chưa thanh toán (nếu có trường status hoặc filter theo logic tương tự)
+    const unpaidSettlements = settlements; // Nếu có trường status thì filter thêm
+    const paid = unpaidSettlements
       .filter(settlement => settlement.payerId === user?.id)
       .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
 
-    const finalBalance = sharedBalance + received - paid;
+    const received = unpaidSettlements
+      .filter(settlement => settlement.payeeId === user?.id)
+      .reduce((sum, settlement) => sum + parseFloat(settlement.amount), 0);
+
+    const rawBalance = mySharedExpenses - mySharOfSharedExpenses - paid + received;
 
     return {
       totalSpent: myTotalSpent,
@@ -67,9 +70,9 @@ export default function HomeMain() {
       totalSharedExpenses,
       othersSharedExpenses,
       mySharOfSharedExpenses,
-      balance: finalBalance,
-      netBalance: Math.abs(finalBalance),
-      isOwing: finalBalance < 0
+      balance: rawBalance,
+      netBalance: Math.abs(rawBalance),
+      isOwing: rawBalance < 0
     };
   };
 
@@ -117,8 +120,9 @@ export default function HomeMain() {
     return 'bg-red-300';
   };
 
-  const recentTransactions = [
-    ...expenses.slice(0, 5).map((expense) => ({
+  const recentTransactions = expenses
+    .slice(0, 8)
+    .map((expense) => ({
       id: expense.id,
       title: expense.title,
       type: expense.isShared ? "shared" : "personal",
@@ -132,19 +136,9 @@ export default function HomeMain() {
       icon: expense.isShared ? 
         <BarChart3 className="w-5 h-5 text-blue-500" /> : 
         <CreditCard className="w-5 h-5 text-orange-500" />
-    })),
-    ...settlements.slice(0, 3).map((settlement) => ({
-      id: settlement.id,
-      title: settlement.description || "Thanh toán",
-      type: "settlement",
-      amount: parseFloat(settlement.amount),
-      status: "paid",
-      date: new Date(settlement.createdAt).toLocaleDateString('vi-VN'),
-      createdAt: settlement.createdAt,
-      payer: settlement.payerId === user?.id ? 'Bạn' : 'Người dùng khác',
-      icon: <TrendingUp className="w-5 h-5 text-green-500" />
     }))
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
 
   const formatCurrency = (amount : number) => {
     const formatted = Math.abs(amount).toLocaleString('de-DE');
