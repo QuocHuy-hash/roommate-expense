@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 
 // API Base URL - adjust this based on your backend configuration
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://roommate.shopdev.lol' 
+  ? 'https://scapingapi.bigdealviet.com' 
   : 'http://localhost:3001';
 
 // Create axios instance with base configuration

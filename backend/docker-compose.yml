@@ -10,8 +10,7 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/roommate_db
     depends_on:
       - db
-    volumes:
-      - .:/app
+    # volumes dòng này đã xóa để không ghi đè code trong container
     restart: unless-stopped
 
   db:
